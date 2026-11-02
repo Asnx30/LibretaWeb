@@ -1,4 +1,4 @@
-# Libreta
+# La libreta de Carla
 
 Bullet journal en forma de libreta, con paso de página animado.
 
