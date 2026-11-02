@@ -346,6 +346,33 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn.round { width: 46px; padding: 0; font-size: 24px; }
 .btn[aria-pressed="true"] { background: var(--ui-ink); color: var(--chip); }
+.book.closed .ribbon { display: none; }
+.tabs-wrap { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: flex-end; position: relative; z-index: 2; padding: 0 12px; }
+.tabs-wrap[hidden] { display: none; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.tab { position: relative; display: inline-flex; flex: none; }
+.tab > button { font: 600 13px/1 var(--ui-font); color: #33402f; background: var(--tc); border: 0; border-radius: 12px 12px 4px 4px; padding: 10px 16px 9px; min-height: 36px; white-space: nowrap; flex: none; cursor: pointer; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.16); transition: transform 0.15s; }
+body.editing .tab > button { padding-right: 22px; }
+.tab > button:hover { transform: translateY(-2px); }
+.tab-x { position: absolute; top: -10px; right: -10px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: #fff; color: #7A5C4A; font: 700 14px/1 var(--ui-font); cursor: pointer; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); padding: 0; }
+.tab-add { display: none; align-items: center; gap: 6px; }
+body.editing .tab-add { display: inline-flex; }
+.tab-add input { font: 500 14px/1 var(--ui-font); border: 1px solid rgba(74, 86, 68, 0.25); border-radius: 999px; padding: 0 12px; min-height: 36px; width: 11em; background: #fff; color: var(--ui-ink); }
+.tab-add button { font: 600 13px/1 var(--ui-font); border: 0; border-radius: 999px; background: var(--chip); color: var(--ui-ink); min-height: 36px; padding: 0 12px; cursor: pointer; box-shadow: 0 2px 0 rgba(120, 95, 70, 0.2); }
+.idx { position: fixed; inset: 0; z-index: 60; background: rgba(60, 50, 40, 0.45); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 14px 14px; }
+.idx[hidden] { display: none; }
+.idx-card { background: #FFFDF8; color: var(--ui-ink); border-radius: 18px; width: min(520px, 100%); max-height: 86vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5); overflow: hidden; }
+.idx-head { display: flex; gap: 8px; padding: 14px; border-bottom: 1px solid rgba(74, 86, 68, 0.14); }
+.idx-head input { flex: 1; min-width: 0; font: 500 16px/1 var(--ui-font); border: 1px solid rgba(74, 86, 68, 0.3); border-radius: 999px; padding: 0 14px; min-height: 42px; background: #fff; color: var(--ui-ink); }
+.idx-head button { font: 600 14px/1 var(--ui-font); border: 0; border-radius: 999px; background: var(--chip); color: var(--ui-ink); min-height: 42px; padding: 0 14px; cursor: pointer; }
+.idx-list { overflow-y: auto; padding: 8px 8px 14px; display: flex; flex-direction: column; gap: 2px; }
+.idx-t { margin: 8px 8px 2px; font: 700 12px/1 var(--ui-font); letter-spacing: 0.08em; text-transform: uppercase; color: #6E7B66; }
+.idx-i { display: flex; gap: 12px; align-items: baseline; text-align: left; width: 100%; border: 0; background: transparent; border-radius: 10px; padding: 10px; cursor: pointer; font: 500 16px/1.25 var(--ui-font); color: var(--ui-ink); }
+.idx-i:hover, .idx-i:focus-visible { background: #EFF3EA; }
+.idx-i .n { min-width: 2.2em; font-weight: 700; color: #B4696F; font-variant-numeric: tabular-nums; }
+.idx-i .t { flex: 1; overflow-wrap: anywhere; }
+.idx-i .tg { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px; color: #33402f; background: var(--tc, #ddd); }
+.idx-none { padding: 18px 12px; color: #6E7B66; font: 500 15px/1.4 var(--ui-font); }
 .where { min-width: 9em; text-align: center; font: 600 15px/1.2 var(--ui-font); font-variant-numeric: tabular-nums; }
 .hint { margin: -4px 0 0; font: 600 1.4rem/1 var(--hand); color: #6E7B66; position: relative; z-index: 2; }
 
@@ -584,6 +611,16 @@ body.sheet .controls .btn:not(.round) { padding: 0 12px; }
 <script type="application/json" id="nube">{"api":"/api"}</script>
 
 <div class="desk">
+  <div class="tabs-wrap" id="tabsWrap" hidden>
+    <div class="tabs" id="tabs"></div>
+    <form class="tab-add" id="tabAdd"><input id="tabName" maxlength="14" placeholder="Nombre de pestaña" aria-label="Nombre de la pestaña"><button type="submit">Pestaña en esta página</button></form>
+  </div>
+  <div class="idx" id="idx" hidden>
+    <div class="idx-card" role="dialog" aria-label="Índice y buscador">
+      <div class="idx-head"><input type="search" id="idxQ" placeholder="Buscar en la libreta…" aria-label="Buscar en la libreta" autocomplete="off"><button type="button" id="idxClose">Cerrar</button></div>
+      <div class="idx-list" id="idxList"></div>
+    </div>
+  </div>
   <div class="scene">
     <div class="decor pot" id="decorPot" aria-hidden="true"></div>
     <div class="decor lav" id="decorLav" aria-hidden="true"></div>
@@ -597,6 +634,7 @@ body.sheet .controls .btn:not(.round) { padding: 0 12px; }
     <button class="btn round" id="prev" type="button" aria-label="Página anterior">‹</button>
     <span class="where" id="where" aria-live="polite">Portada</span>
     <button class="btn round" id="next" type="button" aria-label="Página siguiente">›</button>
+    <button class="btn" id="idxBtn" type="button">Índice</button>
     <button class="btn" id="snd" type="button" aria-pressed="true">Sonido</button>
     <button class="btn" id="shareBtn" type="button" hidden>Copiar enlace</button>
     <button class="btn" id="editBtn" type="button" aria-pressed="false" hidden>Editar</button>
@@ -636,6 +674,7 @@ body.sheet .controls .btn:not(.round) { padding: 0 12px; }
       <button class="swatch" type="button" data-ink="cielo" aria-label="Tinta azul" aria-pressed="false" style="background:#5878A0"></button>
       <input class="color-in" type="color" id="colorIn" value="#5E7B5B" aria-label="Elegir otro color" title="Otro color">
       <span class="sep"></span>
+      <button class="tb" type="button" id="todayBtn" aria-pressed="false" aria-controls="todayRow">Página de hoy</button>
       <button class="tb" type="button" id="addPages">Añadir 2 páginas</button>
       <button class="tb" type="button" id="rmPages">Quitar 2 páginas</button>
       <span class="sep"></span>
@@ -650,6 +689,8 @@ body.sheet .controls .btn:not(.round) { padding: 0 12px; }
       <button class="tb" type="button" id="dupBtn">Duplicar</button>
       <button class="tb" type="button" id="frontBtn">Al frente</button>
       <button class="tb" type="button" id="backBtn">Al fondo</button>
+      <input class="url-in" type="number" id="mvIn" min="1" placeholder="Pág." aria-label="Número de página de destino" style="width:5em;min-width:0;flex:none">
+      <button class="tb" type="button" id="mvBtn">Mover a esa página</button>
       </span>
       <span class="grp" id="calCtl" hidden>
         <span class="sep"></span>
@@ -673,6 +714,13 @@ body.sheet .controls .btn:not(.round) { padding: 0 12px; }
       <label class="rng">Interlineado<input type="range" id="lhRange" min="80" max="250" step="5" value="115"><span id="lhVal">1,15</span></label>
       <label class="rng">Espaciado<input type="range" id="lsRange" min="-5" max="30" step="1" value="0"><span id="lsVal">0</span></label>
       </span>
+    </div>
+    <div class="tool-row sub-row" id="todayRow" hidden>
+      <span class="row-t">Página de hoy</span>
+      <select class="sel-in" id="todayTpl" aria-label="Plantilla para la página de hoy">
+        <option value="">Solo la fecha</option><option value="hab">Hábitos</option><option value="todo">Tareas</option><option value="mood">Ánimo</option><option value="water">Agua</option><option value="sleep">Sueño</option><option value="week">Semana</option><option value="cal">Calendario</option><option value="goal">Meta</option><option value="books">Libros</option>
+      </select>
+      <button class="tb primary" type="button" id="todayGo">Crear página con la fecha de hoy</button>
     </div>
     <div class="tool-row sub-row" id="ytRow" hidden>
       <span class="row-t">Vídeo</span>
@@ -924,6 +972,8 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   const stage = $("#stage"), book = $("#book"), where = $("#where"), hint = $("#hint");
   const prevBtn = $("#prev"), nextBtn = $("#next"), sndBtn = $("#snd"), editBtn = $("#editBtn");
   const tools = $("#tools"), statusEl = $("#status"), fileIn = $("#file"), tray = $("#tray"), trayBtn = $("#trayBtn");
+  const tabsEl = $("#tabs"), tabsWrap = $("#tabsWrap"), idx = $("#idx"), idxList = $("#idxList"), idxQ = $("#idxQ");
+  const TABCOL = ["#E8B4AE", "#B9CFB2", "#EBD28F", "#A9C4D9", "#CDB8DC", "#E8B590"];
   const fmtRow = $("#fmtRow"), fontSel = $("#fontSel"), ytRow = $("#ytRow"), ytIn = $("#ytIn"), linkBtn = $("#linkBtn");
   Object.keys(FONTS).forEach((k) => {
     const o = document.createElement("option");
@@ -1079,6 +1129,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     if (!d.titulo || d.titulo === "Mi libreta") d.titulo = "La libreta de Carla";
     if (d.subtitulo === undefined) d.subtitulo = "";
     if (d.bordado === undefined) d.bordado = "Carla Martín Jimenez";
+    if (!Array.isArray(d.secciones)) d.secciones = [];
     if (!Array.isArray(d.paginas)) d.paginas = [];
     while (d.paginas.length < 2) d.paginas.push({ items: [], d: null });
     if (d.paginas.length % 2) d.paginas.push({ items: [], d: null });
@@ -1616,6 +1667,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     leaves = [...book.querySelectorAll(".leaf")];
     f = clamp(f, 0, n);
     document.title = data.titulo || "La libreta de Carla";
+    renderTabs();
     applyState(true);
   }
 
@@ -1641,6 +1693,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     if (single) shift = side === "right" ? -pw / 2 : pw / 2;
     else shift = f === 0 ? -pw / 2 : f === n ? pw / 2 : 0;
     book.style.setProperty("--shift", shift + "px");
+    book.classList.toggle("closed", f === 0 || f === n);
     prevBtn.disabled = f === 0;
     nextBtn.disabled = f === n;
     hint.hidden = f !== 0 || edit;
@@ -1722,6 +1775,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
       if (sheet) { const row = tools.querySelector(".tool-row"); chrome = 96 + (row ? row.offsetHeight : 48) + 40; }
       else chrome = 150 + tools.offsetHeight;
     }
+    if (!tabsWrap.hidden) chrome += tabsWrap.offsetHeight + 8;
     root.style.setProperty("--toolsH", (sheet ? tools.offsetHeight : 0) + "px");
     let w = Math.min(single ? vw - 24 : (vw - 64) / 2, (vh - chrome) / 1.414, 520);
     pw = Math.max(170, Math.floor(w));
@@ -1990,6 +2044,22 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     else if (t === "pen") status("Dibuja sobre la página con el ratón o con el dedo.");
     else if (t === "eraser") status("Pasa la goma por encima de lo que quieras borrar del dibujo.");
   }
+  const TW = { cal: 76, hab: 86, week: 86, todo: 66, mood: 70, books: 80, water: 72, count: 52, goal: 70, year: 74, sleep: 70 };
+  function mkTpl(s, c) {
+    const now = new Date(), w = TW[s];
+    const it = { id: uid(), s, yr: now.getFullYear(), m: now.getMonth(), c, x: 10, y: 20, w, r: 0 };
+    if (s === "hab") it.rows = [{ t: "beber agua", d: [] }, { t: "leer", d: [] }, { t: "moverme", d: [] }, { t: "dormir bien", d: [] }];
+    if (s === "week") { it.days = ["", "", "", "", "", "", ""]; it.notas = ""; }
+    if (s === "todo") it.rows = [{ t: "primera tarea", done: false }, { t: "segunda tarea", done: false }, { t: "tercera tarea", done: false }];
+    if (s === "mood") it.d = {};
+    if (s === "books") it.list = ["El principito", "Mujercitas", "Momo"];
+    if (s === "water") it.n = 0;
+    if (s === "count") { const d = new Date(Date.now() + 30 * 86400000); it.t = "mi viaje"; it.date = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+    if (s === "goal") { it.t = "libros leídos"; it.cur = 0; it.max = 12; }
+    if (s === "year") it.d = {};
+    if (s === "sleep") it.h = [0, 0, 0, 0, 0, 0, 0];
+    return it;
+  }
   function place(e, face) {
     const r = face.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width * 100, py = (e.clientY - r.top) / r.height * 100;
@@ -2013,19 +2083,8 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
       }
       pending = null;
     } else if (tool === "deco" && deco && TPL[deco.s]) {
-      const TW = { cal: 76, hab: 86, week: 86, todo: 66, mood: 70, books: 80, water: 72, count: 52, goal: 70, year: 74, sleep: 70 };
-      const now = new Date(), w = TW[deco.s];
-      it = { id: uid(), s: deco.s, yr: now.getFullYear(), m: now.getMonth(), c: ink || "salvia", x: clamp(px - w / 2, -5, 40), y: clamp(py - 5, -5, 85), w, r: 0 };
-      if (deco.s === "hab") it.rows = [{ t: "beber agua", d: [] }, { t: "leer", d: [] }, { t: "moverme", d: [] }, { t: "dormir bien", d: [] }];
-      if (deco.s === "week") { it.days = ["", "", "", "", "", "", ""]; it.notas = ""; }
-      if (deco.s === "todo") it.rows = [{ t: "primera tarea", done: false }, { t: "segunda tarea", done: false }, { t: "tercera tarea", done: false }];
-      if (deco.s === "mood") it.d = {};
-      if (deco.s === "books") it.list = ["El principito", "Mujercitas", "Momo"];
-      if (deco.s === "water") it.n = 0;
-      if (deco.s === "count") { const d = new Date(Date.now() + 30 * 86400000); it.t = "mi viaje"; it.date = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
-      if (deco.s === "goal") { it.t = "libros leídos"; it.cur = 0; it.max = 12; }
-      if (deco.s === "year") it.d = {};
-      if (deco.s === "sleep") it.h = [0, 0, 0, 0, 0, 0, 0];
+      it = mkTpl(deco.s, ink || "salvia");
+      it.x = clamp(px - it.w / 2, -5, 40); it.y = clamp(py - 5, -5, 85);
       deco = null;
     } else if (tool === "deco") {
       if (!deco) return;
@@ -2488,6 +2547,142 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     img.onerror = () => status("No se ha podido abrir esa imagen. Prueba con un PNG o un JPG.");
     img.src = url;
   });
+  /* ---------- Pestañas, índice y buscador ---------- */
+  function jump(p) { idx.hidden = true; select(null); goToPage(p + 1); }
+  function renderTabs() {
+    tabsEl.innerHTML = "";
+    const list = data.secciones.slice().sort((a, b) => a.p - b.p);
+    list.forEach((s) => {
+      const w = document.createElement("span"); w.className = "tab"; w.style.setProperty("--tc", s.c || TABCOL[0]);
+      const b = document.createElement("button"); b.type = "button"; b.textContent = s.n;
+      b.addEventListener("click", () => jump(s.p));
+      w.append(b);
+      if (edit) {
+        const x = document.createElement("button"); x.type = "button"; x.className = "tab-x"; x.textContent = "×";
+        x.setAttribute("aria-label", "Quitar la pestaña " + s.n);
+        x.addEventListener("click", () => { data.secciones = data.secciones.filter((z) => z !== s); renderTabs(); layout(); persist(); });
+        w.append(x);
+      }
+      tabsEl.append(w);
+    });
+    tabsWrap.hidden = !list.length && !edit;
+    layout();
+  }
+  $("#tabAdd").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nm = $("#tabName").value.trim();
+    if (!nm) { status("Escribe el nombre de la pestaña."); return; }
+    const p = Math.max(0, visiblePage() - 1);
+    data.secciones.push({ n: nm, p, c: TABCOL[data.secciones.length % TABCOL.length] });
+    $("#tabName").value = "";
+    renderTabs(); persist();
+    status("Pestaña «" + nm + "» creada en la página " + (p + 1) + ".");
+  });
+  const plain = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const SKIP = ["id", "src", "font", "c", "col", "s", "f", "v", "prov"];
+  function strs(o, out) {
+    if (typeof o === "string") out.push(o);
+    else if (Array.isArray(o)) o.forEach((x) => strs(x, out));
+    else if (o && typeof o === "object") for (const k in o) { if (SKIP.indexOf(k) === -1) strs(o[k], out); }
+  }
+  const TNAME = { cal: "Calendario", hab: "Hábitos", week: "Semana", todo: "Tareas", mood: "Ánimo", books: "Libros", water: "Agua", count: "Cuenta atrás", goal: "Meta", year: "Año", sleep: "Sueño" };
+  function pageTitle(p) {
+    const its = data.paginas[p].items;
+    const hs = its.filter((i) => i.s === "h" && i.t && i.t.trim()).map((i) => i.t.trim().split("\n")[0]);
+    if (hs.length) return hs.join(" · ");
+    const t = its.find((i) => typeof i.t === "string" && i.t.trim());
+    if (t) return t.t.trim().split("\n")[0].slice(0, 50);
+    const tp = its.find((i) => TNAME[i.s]);
+    if (tp) return TNAME[tp.s];
+    if (its.some((i) => i.src || i.s === "v" || i.s === "yt")) return "Fotos y vídeos";
+    return data.paginas[p].d ? "Dibujo" : "";
+  }
+  function idxItem(p, text, tab) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "idx-i";
+    const n = document.createElement("span"); n.className = "n"; n.textContent = p + 1;
+    const t = document.createElement("span"); t.className = "t"; t.textContent = text;
+    b.append(n, t);
+    if (tab) { const g = document.createElement("span"); g.className = "tg"; g.style.setProperty("--tc", tab.c); g.textContent = tab.n; b.append(g); }
+    b.addEventListener("click", () => jump(p));
+    return b;
+  }
+  function renderIdx() {
+    idxList.innerHTML = "";
+    const q = plain(idxQ.value.trim());
+    const head = (txt) => { const h = document.createElement("p"); h.className = "idx-t"; h.textContent = txt; idxList.append(h); };
+    const none = (txt) => { const h = document.createElement("p"); h.className = "idx-none"; h.textContent = txt; idxList.append(h); };
+    const tabOf = (p) => data.secciones.filter((s) => s.p <= p).sort((a, b) => b.p - a.p)[0];
+    if (!q) {
+      if (data.secciones.length) {
+        head("Secciones");
+        data.secciones.slice().sort((a, b) => a.p - b.p).forEach((s) => idxList.append(idxItem(s.p, s.n, null)));
+      }
+      head("Páginas");
+      let any = false;
+      data.paginas.forEach((pg, p) => { const t = pageTitle(p); if (t) { any = true; idxList.append(idxItem(p, t, tabOf(p))); } });
+      if (!any) none("Todavía no hay nada escrito.");
+      return;
+    }
+    head("Resultados");
+    let count = 0;
+    data.secciones.forEach((s) => { if (plain(s.n).indexOf(q) > -1) { count++; idxList.append(idxItem(s.p, "Sección: " + s.n, null)); } });
+    data.paginas.forEach((pg, p) => {
+      if (count >= 40) return;
+      const all = []; pg.items.forEach((it) => strs(it, all));
+      const hit = all.find((x) => plain(x).indexOf(q) > -1);
+      if (!hit) return;
+      count++;
+      const flat = hit.replace(/\s+/g, " "), at = plain(flat).indexOf(q);
+      const from = Math.max(0, at - 24), snip = (from ? "…" : "") + flat.slice(from, from + 70) + (flat.length > from + 70 ? "…" : "");
+      idxList.append(idxItem(p, snip, tabOf(p)));
+    });
+    if (!count) none("No encuentro «" + idxQ.value.trim() + "» en ninguna página.");
+  }
+  function openIdx(on) {
+    idx.hidden = !on;
+    if (on) { idxQ.value = ""; renderIdx(); setTimeout(() => idxQ.focus(), 30); }
+  }
+  $("#idxBtn").addEventListener("click", () => openIdx(idx.hidden));
+  $("#idxClose").addEventListener("click", () => openIdx(false));
+  idx.addEventListener("click", (e) => { if (e.target === idx) openIdx(false); });
+  idxQ.addEventListener("input", renderIdx);
+  idxQ.addEventListener("keydown", (e) => { if (e.key === "Escape") openIdx(false); });
+
+  /* Página de hoy */
+  $("#todayBtn").addEventListener("click", () => {
+    const row = $("#todayRow"), on = row.hidden;
+    row.hidden = !on; $("#todayBtn").setAttribute("aria-pressed", String(on)); layout();
+  });
+  $("#todayGo").addEventListener("click", () => {
+    let last = -1;
+    data.paginas.forEach((pg, i) => { if (pg.items.length || pg.d) last = i; });
+    let p = last + 1;
+    if (p >= data.paginas.length) { data.paginas.push({ items: [], d: null }, { items: [], d: null }); p = data.paginas.length - 2; }
+    const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    const items = data.paginas[p].items;
+    items.push({ id: uid(), t: txt, s: "h", c: "salvia", x: 12, y: 6, w: 76, r: -1 });
+    const k = $("#todayTpl").value;
+    if (k) { const it = mkTpl(k, "salvia"); it.x = clamp((100 - it.w) / 2, -5, 40); it.y = 20; items.push(it); }
+    build(); persist();
+    goToPage(p + 1);
+    status("Página creada: " + txt + " (página " + (p + 1) + ").");
+  });
+
+  /* Mover el elemento seleccionado a otra página */
+  function moveSel() {
+    const loc = selId && pageOf(selId);
+    if (!loc) return;
+    const t = parseInt($("#mvIn").value, 10) - 1;
+    if (!(t >= 0 && t < data.paginas.length)) { status("Escribe un número de página entre 1 y " + data.paginas.length + "."); return; }
+    if (t === loc.p) { status("Ya está en esa página."); return; }
+    const [it] = data.paginas[loc.p].items.splice(loc.k, 1);
+    data.paginas[t].items.push(it);
+    build(); goToPage(t + 1); select(it.id); persist();
+    status("Movido a la página " + (t + 1) + ".");
+  }
+  $("#mvBtn").addEventListener("click", moveSel);
+  $("#mvIn").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); moveSel(); } });
+
   $("#addPages").addEventListener("click", () => {
     data.paginas.push({ items: [], d: null }, { items: [], d: null });
     build(); persist();
@@ -2554,6 +2749,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     tray.hidden = true; trayBtn.setAttribute("aria-pressed", "false");
     $("#styleTray").hidden = true; $("#styleBtn").setAttribute("aria-pressed", "false");
     ytRow.hidden = true; linkBtn.setAttribute("aria-pressed", "false"); fmtRow.hidden = true;
+    $("#todayRow").hidden = true; $("#todayBtn").setAttribute("aria-pressed", "false");
     editBtn.textContent = on ? "Terminar" : "Editar";
     editBtn.setAttribute("aria-pressed", String(on));
     setTool(null); selId = null; pending = null; deco = null;
@@ -2726,5 +2922,6 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   }
 })();
 </script>
+
 </body>
 </html>
