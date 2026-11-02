@@ -10,7 +10,7 @@
 <title>La libreta de Carla</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Caveat:wght@400..700&family=Dancing+Script:wght@600;700&family=Figtree:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Patrick+Hand&family=Shadows+Into+Light&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Caveat:wght@400..700&family=Dancing+Script:wght@600;700&family=Figtree:wght@400;600;700&family=Kalam:wght@400;700&family=Pacifico&family=Lora:ital,wght@0,400;0,600;1,400&family=Patrick+Hand&family=Shadows+Into+Light&family=Special+Elite&display=swap">
 <style>
 /* Layout: un bullet journal de tela salvia sobre una mesa de lino, con plantas alrededor; doble página en pantallas anchas, una sola en el móvil. */
 :root {
@@ -79,8 +79,11 @@ button { font-family: inherit; }
 @media (max-width: 999px) { .decor { display: none; } }
 
 /* ---------- Libro ---------- */
-.stage { position: relative; z-index: 1; width: calc(var(--pw) * 2); height: var(--ph); cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-.stage.single { width: var(--pw); clip-path: inset(-80px 0 -80px 0); }
+.stage { position: relative; z-index: 1; width: calc(var(--pw) * 2); height: var(--ph); cursor: pointer; touch-action: pan-y pinch-zoom; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+/* Al editar se puede seleccionar y escribir texto (en iPhone, sin esto no aparece el cursor) */
+.editing .stage { user-select: auto; -webkit-user-select: auto; }
+.tx, .ttl, .ed { -webkit-user-select: text; user-select: text; }
+.stage.single { width: var(--pw); clip-path: inset(-80px 0 -80px 0); overflow-x: clip; overflow-y: visible; }
 .editing .stage { cursor: default; }
 .book {
   position: absolute; top: 0; left: 50%;
@@ -90,7 +93,13 @@ button { font-family: inherit; }
   transform: translateX(var(--shift, 0px));
   transition: transform var(--dur) var(--ease);
 }
-.editing .book { touch-action: none; }
+.editing .book { touch-action: none; transition-duration: 0.25s; perspective: none; }
+/* Al editar, las páginas se muestran planas: escribir dentro de elementos girados en 3D falla en muchos móviles */
+.editing .leaf { transition: none !important; transform-style: flat; }
+.editing .leaf.flipped { transform: translateX(-100%); }
+.editing .face { backface-visibility: visible; -webkit-backface-visibility: visible; transition: none !important; }
+.editing .face.back { transform: none; }
+.editing .face::after { display: none; }
 .ribbon {
   position: absolute; left: calc(50% + var(--pw) * 0.42); top: 60%;
   width: calc(var(--pw) * 0.035); height: calc(var(--ph) * 0.5);
@@ -170,6 +179,20 @@ button { font-family: inherit; }
   color: var(--title); text-align: center; overflow-wrap: anywhere; outline: none; min-width: 2em;
 }
 .label .sprig { position: absolute; pointer-events: none; }
+.label { align-content: center; }
+.sub {
+  position: relative; z-index: 1; margin-top: calc(var(--pw) * 0.022);
+  font: 500 calc(var(--pw) * 0.05)/1.15 var(--hand);
+  color: color-mix(in srgb, var(--title) 85%, transparent);
+  text-align: center; overflow-wrap: anywhere; outline: none; min-width: 2em;
+}
+.sub:empty { display: none; }
+.editing .sub:empty { display: block; }
+.editing .sub:empty::before { content: "Añade un subtítulo"; opacity: 0.45; }
+.editing .sub.sel-title { outline: 1.5px dashed rgba(94, 123, 91, 0.9); outline-offset: 6px; border-radius: 4px; }
+/* Nombre bordado en la tapa */
+.bordado { position: absolute; left: 11%; right: 21%; bottom: 6.5%; z-index: 1; pointer-events: none; }
+.bordado svg { display: block; width: 100%; height: auto; overflow: visible; }
 .label .sprig svg { display: block; width: 100%; height: auto; }
 .label .s1 { width: 34%; left: -6%; bottom: -18%; transform: rotate(-38deg); }
 .label .s2 { width: 30%; right: -4%; bottom: -14%; transform: rotate(34deg); }
@@ -374,6 +397,16 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
 .color-in::-webkit-color-swatch { border: 0; border-radius: 50%; }
 .color-in::-moz-color-swatch { border: 0; border-radius: 50%; }
 .grp { display: contents; }
+.rng { flex: none; display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 var(--ui-font); color: var(--ui-muted); }
+.rng input[type="range"] { width: 110px; accent-color: var(--sage); }
+.rng span { min-width: 3.2em; color: var(--ui-ink); font-variant-numeric: tabular-nums; }
+.cpick { display: flex; flex-direction: column; align-items: center; gap: 4px; font: 600 11px/1 var(--ui-font); color: var(--ui-ink); cursor: pointer; }
+.cpick input { width: 42px; height: 42px; padding: 2px; border: 1px solid rgba(74, 86, 68, 0.22); border-radius: 12px; background: #FFFDF8; cursor: pointer; }
+.cpick input::-webkit-color-swatch-wrapper { padding: 0; }
+.cpick input::-webkit-color-swatch { border: 0; border-radius: 9px; }
+.cpick input::-moz-color-swatch { border: 0; border-radius: 9px; }
+#colorRow { align-items: flex-end; }
+.editing .ttl.sel-title { outline: 1.5px dashed rgba(94, 123, 91, 0.9); outline-offset: 6px; border-radius: 4px; }
 .tb:disabled { opacity: 0.4; cursor: default; }
 
 /* Arrastrar la hoja con el dedo */
@@ -470,6 +503,31 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
 .pick.tp { width: auto; min-width: 58px; padding: 6px 10px; gap: 4px; font: 600 12px/1.1 var(--ui-font); color: var(--ui-ink); }
 .pick.tp svg { width: 26px; height: 26px; }
 
+/* Móvil editando: barra de herramientas fija abajo, deslizable de lado */
+body.sheet .tools {
+  position: fixed; left: 0; right: 0; bottom: 0; width: auto; z-index: 60;
+  border-radius: 18px 18px 0 0; max-height: 52vh; overflow-y: auto; overscroll-behavior: contain;
+  padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  box-shadow: 0 -10px 26px -14px rgba(90, 60, 30, 0.45);
+}
+body.sheet .tools > .tool-row:first-child { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+body.sheet .tools > .tool-row:first-child::-webkit-scrollbar { display: none; }
+body.sheet .desk { justify-content: flex-start; min-height: 0; padding-bottom: calc(var(--toolsH, 120px) + 12px); }
+body.sheet .status { font-size: 12px; }
+body.sheet .controls { gap: 8px; flex-wrap: nowrap; }
+body.sheet #snd, body.sheet #shareBtn { display: none; }
+body.sheet .where { min-width: 7.5em; }
+body.sheet .controls .btn:not(.round) { padding: 0 12px; }
+@media (pointer: coarse) {
+  .hd { width: 38px; height: 38px; font-size: 17px; }
+  .hd[data-a="mv"] { top: -24px; left: -24px; }
+  .hd[data-a="rt"] { top: -24px; left: calc(50% - 19px); }
+  .hd[data-a="dl"] { top: -24px; right: -24px; }
+  .hd[data-a="sz"] { bottom: -24px; right: -24px; }
+  .hd[data-a="fr"] { bottom: -24px; left: -24px; }
+  .swatch { width: 32px; height: 32px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root { --dur: 1ms; }
 }
@@ -477,7 +535,7 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
 </head>
 <body>
 
-<script type="application/json" id="datos">{"titulo":"La libreta de Carla","estilo":"salvia","papel":"puntos","paginas":[{"items":[{"id":"a0","s":"w","v":"rosa","x":30,"y":3,"w":40,"r":-3},{"id":"a1","t":"noviembre","s":"h","x":17,"y":10,"w":72,"r":-2,"c":"salvia"},{"id":"a2","t":"Este mes quiero:\n• más plantas en casa\n• paseos sin móvil\n• leer antes de dormir","s":"p","x":17,"y":24,"w":74,"r":0,"c":"tierra"},{"id":"a3","s":"k","v":"eucalipto","x":64,"y":52,"w":30,"r":14},{"id":"a4","t":"Pega aquí una foto bonita","s":"n","x":15,"y":62,"w":38,"r":-4,"c":"rosa"}],"d":null},{"items":[{"id":"b1","t":"esta semana","s":"h","x":14,"y":8,"w":76,"r":-1,"c":"rosa"},{"id":"b2","t":"• regar las plantitas\n○ cena con amigas el jueves\n• terminar el libro\n– el domingo, mercadillo","s":"p","x":14,"y":23,"w":76,"r":0,"c":"tierra"},{"id":"b3","s":"w","v":"salvia","x":48,"y":53,"w":42,"r":4},{"id":"b4","s":"k","v":"lavanda","x":12,"y":56,"w":27,"r":-8},{"id":"b5","t":"• tarea   ○ evento   – nota","s":"p","x":34,"y":86,"w":60,"r":0,"c":"salvia"}],"d":null},{"items":[{"id":"c1","t":"gratitud","s":"h","x":17,"y":8,"w":64,"r":-2,"c":"salvia"},{"id":"c2","t":"1. el café de esta mañana\n2. una llamada inesperada\n3. el sol en la ventana","s":"p","x":17,"y":23,"w":74,"r":0,"c":"tierra"},{"id":"c3","s":"w","v":"lavanda","x":18,"y":64,"w":36,"r":-6},{"id":"c4","s":"k","v":"margarita","x":60,"y":56,"w":28,"r":6}],"d":null},{"items":[{"id":"d1","t":"mis plantitas","s":"h","x":13,"y":8,"w":78,"r":-1,"c":"salvia"},{"id":"d2","s":"k","v":"pilea","x":12,"y":25,"w":32,"r":0},{"id":"d3","t":"Pilea: riego una vez por semana\nPotos: luz indirecta\nHelecho: le encanta la humedad","s":"p","x":48,"y":27,"w":44,"r":0,"c":"tierra"},{"id":"d4","s":"k","v":"helecho","x":60,"y":60,"w":26,"r":-10},{"id":"d5","s":"w","v":"arena","x":16,"y":76,"w":36,"r":3}],"d":null},{"items":[{"id":"e1","t":"hábitos","s":"h","x":14,"y":7,"w":70,"r":-1.5,"c":"rosa"},{"id":"e2","s":"hab","yr":2026,"m":10,"c":"salvia","rows":[{"t":"beber agua","d":[1,2]},{"t":"leer","d":[1]},{"t":"paseo","d":[2]},{"t":"dormir 8 h","d":[1,2]},{"t":"regar plantas","d":[2]}],"x":8,"y":22,"w":86,"r":0},{"id":"e3","s":"w","v":"salvia","x":56,"y":66,"w":34,"r":-4},{"id":"e4","s":"k","v":"hojita","x":16,"y":64,"w":22,"r":-12}],"d":null},{"items":[{"id":"f1","s":"cal","yr":2026,"m":10,"c":"salvia","x":11,"y":7,"w":80,"r":0},{"id":"f2","t":"Apunta aquí los días importantes","s":"p","x":13,"y":60,"w":46,"r":-1,"c":"tierra"},{"id":"f3","s":"k","v":"margarita","x":64,"y":60,"w":24,"r":8}],"d":null},{"items":[{"id":"g1","t":"mi semana","s":"h","x":14,"y":6,"w":70,"r":-1,"c":"salvia"},{"id":"g2","s":"week","days":["yoga a las 19 h","","cena con amigas","","¡viernes!","mercadillo","descanso"],"notas":"comprar macetas","c":"salvia","x":7,"y":18,"w":86,"r":0}],"d":null},{"items":[{"id":"h1","t":"lecturas","s":"h","x":14,"y":6,"w":60,"r":-1.5,"c":"rosa"},{"id":"h2","s":"books","list":["El principito","Mujercitas","Momo","Rayuela","Matilda"],"c":"tierra","x":10,"y":18,"w":80,"r":0},{"id":"h3","t":"por hacer","s":"h","x":14,"y":52,"w":60,"r":-1,"c":"salvia"},{"id":"h4","s":"todo","rows":[{"t":"devolver el libro a la biblioteca","done":true},{"t":"apuntarme al club de lectura","done":false},{"t":"buscar una lámpara para leer","done":false}],"c":"tierra","x":14,"y":63,"w":74,"r":0}],"d":null},{"items":[{"id":"i1","s":"mood","yr":2026,"m":10,"d":{"1":2,"2":1},"c":"tierra","x":15,"y":6,"w":70,"r":0},{"id":"i2","t":"agua de hoy","s":"h","x":14,"y":70,"w":60,"r":-1,"c":"cielo"},{"id":"i3","s":"water","n":3,"c":"cielo","x":12,"y":81,"w":76,"r":0}],"d":null},{"items":[],"d":null},{"items":[],"d":null},{"items":[],"d":null}]}</script>
+<script type="application/json" id="datos">{"titulo":"La libreta de Carla","subtitulo":"","bordado":"Carla Martín Jimenez","estilo":"salvia","papel":"puntos","paginas":[{"items":[{"id":"a0","s":"w","v":"rosa","x":30,"y":3,"w":40,"r":-3},{"id":"a1","t":"noviembre","s":"h","x":17,"y":10,"w":72,"r":-2,"c":"salvia"},{"id":"a2","t":"Este mes quiero:\n• más plantas en casa\n• paseos sin móvil\n• leer antes de dormir","s":"p","x":17,"y":24,"w":74,"r":0,"c":"tierra"},{"id":"a3","s":"k","v":"eucalipto","x":64,"y":52,"w":30,"r":14},{"id":"a4","t":"Pega aquí una foto bonita","s":"n","x":15,"y":62,"w":38,"r":-4,"c":"rosa"}],"d":null},{"items":[{"id":"b1","t":"esta semana","s":"h","x":14,"y":8,"w":76,"r":-1,"c":"rosa"},{"id":"b2","t":"• regar las plantitas\n○ cena con amigas el jueves\n• terminar el libro\n– el domingo, mercadillo","s":"p","x":14,"y":23,"w":76,"r":0,"c":"tierra"},{"id":"b3","s":"w","v":"salvia","x":48,"y":53,"w":42,"r":4},{"id":"b4","s":"k","v":"lavanda","x":12,"y":56,"w":27,"r":-8},{"id":"b5","t":"• tarea   ○ evento   – nota","s":"p","x":34,"y":86,"w":60,"r":0,"c":"salvia"}],"d":null},{"items":[{"id":"c1","t":"gratitud","s":"h","x":17,"y":8,"w":64,"r":-2,"c":"salvia"},{"id":"c2","t":"1. el café de esta mañana\n2. una llamada inesperada\n3. el sol en la ventana","s":"p","x":17,"y":23,"w":74,"r":0,"c":"tierra"},{"id":"c3","s":"w","v":"lavanda","x":18,"y":64,"w":36,"r":-6},{"id":"c4","s":"k","v":"margarita","x":60,"y":56,"w":28,"r":6}],"d":null},{"items":[{"id":"d1","t":"mis plantitas","s":"h","x":13,"y":8,"w":78,"r":-1,"c":"salvia"},{"id":"d2","s":"k","v":"pilea","x":12,"y":25,"w":32,"r":0},{"id":"d3","t":"Pilea: riego una vez por semana\nPotos: luz indirecta\nHelecho: le encanta la humedad","s":"p","x":48,"y":27,"w":44,"r":0,"c":"tierra"},{"id":"d4","s":"k","v":"helecho","x":60,"y":60,"w":26,"r":-10},{"id":"d5","s":"w","v":"arena","x":16,"y":76,"w":36,"r":3}],"d":null},{"items":[{"id":"e1","t":"hábitos","s":"h","x":14,"y":7,"w":70,"r":-1.5,"c":"rosa"},{"id":"e2","s":"hab","yr":2026,"m":10,"c":"salvia","rows":[{"t":"beber agua","d":[1,2]},{"t":"leer","d":[1]},{"t":"paseo","d":[2]},{"t":"dormir 8 h","d":[1,2]},{"t":"regar plantas","d":[2]}],"x":8,"y":22,"w":86,"r":0},{"id":"e3","s":"w","v":"salvia","x":56,"y":66,"w":34,"r":-4},{"id":"e4","s":"k","v":"hojita","x":16,"y":64,"w":22,"r":-12}],"d":null},{"items":[{"id":"f1","s":"cal","yr":2026,"m":10,"c":"salvia","x":11,"y":7,"w":80,"r":0},{"id":"f2","t":"Apunta aquí los días importantes","s":"p","x":13,"y":60,"w":46,"r":-1,"c":"tierra"},{"id":"f3","s":"k","v":"margarita","x":64,"y":60,"w":24,"r":8}],"d":null},{"items":[{"id":"g1","t":"mi semana","s":"h","x":14,"y":6,"w":70,"r":-1,"c":"salvia"},{"id":"g2","s":"week","days":["yoga a las 19 h","","cena con amigas","","¡viernes!","mercadillo","descanso"],"notas":"comprar macetas","c":"salvia","x":7,"y":18,"w":86,"r":0}],"d":null},{"items":[{"id":"h1","t":"lecturas","s":"h","x":14,"y":6,"w":60,"r":-1.5,"c":"rosa"},{"id":"h2","s":"books","list":["El principito","Mujercitas","Momo","Rayuela","Matilda"],"c":"tierra","x":10,"y":18,"w":80,"r":0},{"id":"h3","t":"por hacer","s":"h","x":14,"y":52,"w":60,"r":-1,"c":"salvia"},{"id":"h4","s":"todo","rows":[{"t":"devolver el libro a la biblioteca","done":true},{"t":"apuntarme al club de lectura","done":false},{"t":"buscar una lámpara para leer","done":false}],"c":"tierra","x":14,"y":63,"w":74,"r":0}],"d":null},{"items":[{"id":"i1","s":"mood","yr":2026,"m":10,"d":{"1":2,"2":1},"c":"tierra","x":15,"y":6,"w":70,"r":0},{"id":"i2","t":"agua de hoy","s":"h","x":14,"y":70,"w":60,"r":-1,"c":"cielo"},{"id":"i3","s":"water","n":3,"c":"cielo","x":12,"y":81,"w":76,"r":0}],"d":null},{"items":[],"d":null},{"items":[],"d":null},{"items":[],"d":null}]}</script>
 
 <script type="application/json" id="nube">{"api":"/api"}</script>
 
@@ -544,9 +602,11 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
     </div>
     <div class="tool-row sub-row" id="fmtRow" hidden>
       <span class="row-t">Seleccionado</span>
+      <span class="grp" id="selItemCtl">
       <button class="tb" type="button" id="dupBtn">Duplicar</button>
       <button class="tb" type="button" id="frontBtn">Al frente</button>
       <button class="tb" type="button" id="backBtn">Al fondo</button>
+      </span>
       <span class="grp" id="calCtl" hidden>
         <span class="sep"></span>
         <button class="tb" type="button" id="calPrev">Mes anterior</button>
@@ -559,13 +619,15 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
       <span class="grp" id="txtCtl">
       <span class="sep"></span>
       <select class="sel-in" id="fontSel" aria-label="Tipo de letra"></select>
-      <button class="tb ic" type="button" id="fsDown" aria-label="Letra más pequeña" title="Más pequeña">A−</button>
-      <button class="tb ic" type="button" id="fsUp" aria-label="Letra más grande" title="Más grande">A+</button>
       <button class="tb ic" type="button" id="boldBtn" aria-pressed="false" aria-label="Negrita" title="Negrita"><b>N</b></button>
       <button class="tb ic" type="button" id="italBtn" aria-pressed="false" aria-label="Cursiva" title="Cursiva"><i>K</i></button>
+      <button class="tb ic" type="button" id="undBtn" aria-pressed="false" aria-label="Subrayado" title="Subrayado"><u>S</u></button>
       <button class="tb ic" type="button" data-al="left" aria-pressed="false" aria-label="Alinear a la izquierda" title="Izquierda"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4h14M2 8h9M2 12h14M2 16h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       <button class="tb ic" type="button" data-al="center" aria-pressed="false" aria-label="Centrar" title="Centro"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4h14M4.5 8h9M2 12h14M4.5 16h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       <button class="tb ic" type="button" data-al="right" aria-pressed="false" aria-label="Alinear a la derecha" title="Derecha"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4h14M7 8h9M2 12h14M7 16h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <label class="rng">Tamaño<input type="range" id="fsRange" min="50" max="300" step="5" value="100"><span id="fsVal">100%</span></label>
+      <label class="rng">Interlineado<input type="range" id="lhRange" min="80" max="250" step="5" value="115"><span id="lhVal">1,15</span></label>
+      <label class="rng">Espaciado<input type="range" id="lsRange" min="-5" max="30" step="1" value="0"><span id="lsVal">0</span></label>
       </span>
     </div>
     <div class="tool-row sub-row" id="ytRow" hidden>
@@ -576,6 +638,17 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
     <div class="tray" id="styleTray" hidden>
       <div class="tray-group"><p class="tray-t">Libreta</p><div class="tray-row" id="variantRow"></div></div>
       <div class="tray-group"><p class="tray-t">Papel</p><div class="tray-row" id="paperRow"></div></div>
+      <div class="tray-group"><p class="tray-t">Nombre bordado en la tapa</p><div class="tray-row"><input class="url-in" type="text" id="bordadoIn" maxlength="40" placeholder="Escribe un nombre" aria-label="Nombre bordado en la tapa" style="min-width: 220px"></div></div>
+      <div class="tray-group"><p class="tray-t">Colores propios</p><div class="tray-row" id="colorRow">
+        <label class="cpick"><input type="color" data-col="tapa"><span>Tapa</span></label>
+        <label class="cpick"><input type="color" data-col="goma"><span>Goma</span></label>
+        <label class="cpick"><input type="color" data-col="etiqueta"><span>Etiqueta</span></label>
+        <label class="cpick"><input type="color" data-col="titulo"><span>Título</span></label>
+        <label class="cpick"><input type="color" data-col="hilo"><span>Bordado</span></label>
+        <label class="cpick"><input type="color" data-col="papel"><span>Papel</span></label>
+        <label class="cpick"><input type="color" data-col="mesa"><span>Fondo</span></label>
+        <button class="tb" type="button" id="colReset">Quitar colores propios</button>
+      </div></div>
     </div>
     <div class="tray" id="tray" hidden>
       <div class="tray-group"><p class="tray-t">Plantitas</p><div class="tray-row" id="stkRow"></div></div>
@@ -630,7 +703,9 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     shadows: { n: "Lápiz", css: '"Shadows Into Light", cursive' },
     elite: { n: "Máquina de escribir", css: '"Special Elite", "Courier New", monospace' },
     lora: { n: "Clásica", css: '"Lora", Georgia, serif' },
-    figtree: { n: "Moderna", css: '"Figtree", system-ui, sans-serif' }
+    figtree: { n: "Moderna", css: '"Figtree", system-ui, sans-serif' },
+    kalam: { n: "Bolígrafo", css: '"Kalam", cursive' },
+    pacifico: { n: "Retro", css: '"Pacifico", cursive' }
   };
   const KEY = "libreta-bujo-v1";
   const MAX_VIDEO_MB = 60;
@@ -905,6 +980,8 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   function normalize(d) {
     if (!d || typeof d !== "object") d = { titulo: "La libreta de Carla", paginas: [] };
     if (!d.titulo || d.titulo === "Mi libreta") d.titulo = "La libreta de Carla";
+    if (d.subtitulo === undefined) d.subtitulo = "";
+    if (d.bordado === undefined) d.bordado = "Carla Martín Jimenez";
     if (!Array.isArray(d.paginas)) d.paginas = [];
     while (d.paginas.length < 2) d.paginas.push({ items: [], d: null });
     if (d.paginas.length % 2) d.paginas.push({ items: [], d: null });
@@ -986,6 +1063,36 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   };
   const PAPERS = { puntos: "Puntos", rayas: "Rayas", cuadricula: "Cuadrícula", liso: "Liso" };
   const curVariant = () => VARIANTS[data.estilo] ? data.estilo : "salvia";
+  /* Bordado: texto con relleno de hilo en diagonal, puntadas en el borde y relieve */
+  function shade(hex, amt) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return hex;
+    const n = parseInt(m[1], 16), f = (c) => Math.max(0, Math.min(255, Math.round(c + (amt < 0 ? c : 255 - c) * amt)));
+    return "#" + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map((c) => c.toString(16).padStart(2, "0")).join("");
+  }
+  function drawBordado(box) {
+    if (!box) return;
+    box.innerHTML = "";
+    const name = (data.bordado || "").trim();
+    if (!name) return;
+    const NS = "http://www.w3.org/2000/svg", col = data.bordadoColor || "#F2E4C8", dark = shade(col, -0.22), light = shade(col, 0.35);
+    const el = (t, a) => { const x = document.createElementNS(NS, t); Object.keys(a).forEach((k) => x.setAttribute(k, a[k])); return x; };
+    const svg = el("svg", { viewBox: "0 0 400 64", "aria-hidden": "true" });
+    const defs = el("defs", {});
+    const pat = el("pattern", { id: "hilo-satinado", width: "3", height: "3", patternUnits: "userSpaceOnUse", patternTransform: "rotate(58)" });
+    pat.append(el("rect", { width: "3", height: "3", fill: col }), el("rect", { width: "1", height: "3", fill: dark, opacity: "0.55" }), el("rect", { x: "2", width: "0.6", height: "3", fill: light, opacity: "0.6" }));
+    const flt = el("filter", { id: "hilo-relieve", x: "-5%", y: "-20%", width: "110%", height: "150%" });
+    flt.append(el("feDropShadow", { dx: "0", dy: "1.3", stdDeviation: "0.7", "flood-color": "#000", "flood-opacity": "0.5" }));
+    defs.append(pat, flt);
+    const size = Math.min(36, Math.round(700 / Math.max(10, name.length)));
+    const txt = el("text", {
+      x: "200", y: "44", "text-anchor": "middle", "font-family": "'Dancing Script', 'Segoe Script', cursive", "font-weight": "700", "font-size": String(size),
+      fill: "url(#hilo-satinado)", stroke: dark, "stroke-width": "0.7", "stroke-dasharray": "2.2 1.4", "paint-order": "stroke", filter: "url(#hilo-relieve)"
+    });
+    txt.textContent = name;
+    const line = el("path", { d: "M90 56 Q200 62 310 56", fill: "none", stroke: col, "stroke-width": "1.4", "stroke-dasharray": "5 4", "stroke-linecap": "round", filter: "url(#hilo-relieve)", opacity: "0.85" });
+    svg.append(defs, txt, line);
+    box.append(svg);
+  }
   function makeTile(V) {
     const c = V.tile;
     const inner = V.dark
@@ -993,12 +1100,15 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
       : leaf(18, 30, -60, 16, 5, c[0]) + leaf(18, 30, -120, 13, 4, c[1]) + leaf(60, 70, -30, 14, 4.5, c[2]) + leaf(60, 70, -150, 12, 4, c[0]) + '<circle cx="62" cy="22" r="2" fill="' + c[2] + '"/><circle cx="24" cy="66" r="1.6" fill="' + c[0] + '"/>';
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><g opacity="0.6">' + inner + "</g></svg>";
   }
+  const COLVARS = { tapa: ["--cover"], goma: ["--band", "--ribbon"], etiqueta: ["--label-bg"], papel: ["--paper"], mesa: ["--desk"] };
   function applyVariant() {
     const k = curVariant(), V = VARIANTS[k], base = VARIANTS.salvia.v;
     Object.keys(base).forEach((p) => root.style.setProperty(p, V.v[p] !== undefined ? V.v[p] : base[p]));
     root.style.setProperty("--leafpat", 'url("data:image/svg+xml,' + encodeURIComponent(makeTile(V)) + '")');
     document.body.dataset.spiral = V.spiral ? "1" : "";
     document.body.dataset.papel = PAPERS[data.papel] ? data.papel : V.papel;
+    const c = data.colores || {};
+    Object.keys(COLVARS).forEach((k) => { if (c[k]) COLVARS[k].forEach((v) => root.style.setProperty(v, c[k])); });
   }
   const tile = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><g opacity="0.55">' +
     leaf(18, 30, -60, 16, 5, "#A9BEA5") + leaf(18, 30, -120, 13, 4, "#C9B5D6") + leaf(60, 70, -30, 14, 4.5, "#E3B9B4") + leaf(60, 70, -150, 12, 4, "#A9BEA5") +
@@ -1166,6 +1276,27 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     tx.style.fontFamily = it.font && FONTS[it.font] ? FONTS[it.font].css : "";
     tx.style.fontWeight = it.b === true ? "700" : it.b === false ? "400" : "";
     tx.style.fontStyle = it.i ? "italic" : "";
+    tx.style.lineHeight = it.lh ? String(it.lh) : "";
+    tx.style.letterSpacing = it.ls ? it.ls / 100 + "em" : "";
+    tx.style.textDecoration = it.u ? "underline" : "";
+  }
+  /* Estilo del título y del subtítulo de la tapa */
+  function coverStyle(k) { const key = k + "Estilo"; if (!data[key]) data[key] = { s: k === "titulo" ? "h" : "p" }; return data[key]; }
+  function titleStyle() { return coverStyle("titulo"); }
+  function styleTitle(t) { styleCoverEl(t, data.tituloEstilo, 0.11); }
+  function styleCover() { styleTitle(book.querySelector(".ttl")); styleCoverEl(book.querySelector(".sub"), data.subtituloEstilo, 0.05); }
+  function styleCoverEl(t, st, base) {
+    if (!t) return;
+    st = st || {};
+    t.style.fontFamily = st.font && FONTS[st.font] ? FONTS[st.font].css : "";
+    t.style.fontSize = st.fs ? "calc(var(--pw) * " + base + " * " + st.fs + ")" : "";
+    t.style.color = st.col || (st.c && INK[st.c]) || "";
+    t.style.fontWeight = st.b === false ? "400" : "";
+    t.style.fontStyle = st.i ? "italic" : "";
+    t.style.textAlign = st.al || "";
+    t.style.lineHeight = st.lh ? String(st.lh) : "";
+    t.style.letterSpacing = st.ls ? st.ls / 100 + "em" : "";
+    t.style.textDecoration = st.u ? "underline" : "";
   }
   const TPL = { cal: calEl, hab: habEl, week: weekEl, todo: todoEl, mood: moodEl, books: booksEl, water: waterEl };
   function itemEl(it) {
@@ -1251,7 +1382,17 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     const s1 = div("sprig s1"), s2 = div("sprig s2"), s3 = div("sprig s3");
     const sp = VARIANTS[curVariant()].sprigs;
     s1.innerHTML = art(sp[0]); s2.innerHTML = art(sp[1]); s3.innerHTML = art(sp[2]);
-    label.append(s1, s2, s3, ttl); face.append(band, label);
+    const sub = div("sub");
+    sub.textContent = data.subtitulo || "";
+    if (edit) {
+      setEditable(sub);
+      sub.addEventListener("input", () => { data.subtitulo = sub.innerText.trim(); persist(); });
+    }
+    const bord = div("bordado");
+    label.append(s1, s2, s3, ttl, sub); face.append(band, label, bord);
+    styleTitle(ttl);
+    styleCoverEl(sub, data.subtituloEstilo, 0.05);
+    drawBordado(bord);
   }
   function build() {
     applyVariant();
@@ -1372,8 +1513,16 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     const vw = root.clientWidth, vh = window.innerHeight;
     const wasSingle = single;
     single = vw < 760;
-    const chrome = edit ? (tray.hidden && document.getElementById("styleTray").hidden ? 250 : 380) : 160;
-    let w = Math.min(single ? vw - 32 : (vw - 64) / 2, (vh - chrome) / 1.414, 520);
+    const sheet = edit && single;
+    document.body.classList.toggle("sheet", sheet);
+    /* Espacio que ocupan los botones; en el móvil solo cuenta la fila principal de la barra, los paneles se superponen */
+    let chrome = single ? 236 : 150;
+    if (edit) {
+      if (sheet) { const row = tools.querySelector(".tool-row"); chrome = 96 + (row ? row.offsetHeight : 48) + 40; }
+      else chrome = 150 + tools.offsetHeight;
+    }
+    root.style.setProperty("--toolsH", (sheet ? tools.offsetHeight : 0) + "px");
+    let w = Math.min(single ? vw - 24 : (vw - 64) / 2, (vh - chrome) / 1.414, 520);
     pw = Math.max(170, Math.floor(w));
     root.style.setProperty("--pw", pw + "px");
     root.style.setProperty("--ph", Math.round(pw * 1.414) + "px");
@@ -1381,7 +1530,16 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     if (single && !wasSingle) side = f === n ? "left" : "right";
     applyState(true);
   }
-  window.addEventListener("resize", layout);
+  /* Al abrir el teclado del móvil la pantalla cambia de alto: mientras se escribe no se recoloca nada */
+  let resizeT = null;
+  const typing = () => { const a = document.activeElement; return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+  window.addEventListener("resize", () => {
+    if (typing()) return;
+    clearTimeout(resizeT); resizeT = setTimeout(layout, 120);
+  });
+  try {
+    new ResizeObserver(() => { if (document.body.classList.contains("sheet")) root.style.setProperty("--toolsH", tools.offsetHeight + "px"); }).observe(tools);
+  } catch (e) {}
 
   /* ---------- Lectura: tocar, deslizar, esquina ---------- */
   let down = null;
@@ -1529,27 +1687,56 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     if (selId === id) selId = null;
     persist();
   }
+  let selCover = null;
   function select(id) {
-    selId = id;
+    selId = id; selCover = null;
+    book.querySelectorAll(".sel-title").forEach((x) => x.classList.remove("sel-title"));
     book.querySelectorAll(".it.sel").forEach((x) => x.classList.remove("sel"));
     if (id) { const el = book.querySelector('.it[data-id="' + id + '"]'); if (el) el.classList.add("sel"); }
     syncFormat();
+    if (id && document.body.classList.contains("sheet")) {
+      /* En el móvil, que la barra de abajo no tape lo que se está editando */
+      requestAnimationFrame(() => {
+        const el = book.querySelector('.it[data-id="' + id + '"]');
+        if (!el) return;
+        const r = el.getBoundingClientRect(), limit = tools.getBoundingClientRect().top - 16;
+        if (r.bottom > limit) window.scrollBy({ top: Math.min(r.bottom - limit, r.top - 70), behavior: "smooth" });
+      });
+    }
   }
   const ROWADD = { hab: "Añadir hábito", todo: "Añadir tarea", books: "Añadir libro" };
+  function fillFormat(it, isTitle) {
+    const head = it.s === "h";
+    fontSel.value = it.font || (head ? "dancing" : "caveat");
+    $("#boldBtn").setAttribute("aria-pressed", String(it.b === undefined ? head : it.b));
+    $("#italBtn").setAttribute("aria-pressed", String(!!it.i));
+    $("#undBtn").setAttribute("aria-pressed", String(!!it.u));
+    document.querySelectorAll("[data-al]").forEach((b) => b.setAttribute("aria-pressed", String((it.al || (isTitle ? "center" : "left")) === b.dataset.al)));
+    const fsv = Math.round((it.fs || 1) * 100), lhv = Math.round((it.lh || (head ? 1.1 : 1.15)) * 100), lsv = it.ls || 0;
+    $("#fsRange").value = fsv; $("#fsVal").textContent = fsv + "%";
+    $("#lhRange").value = lhv; $("#lhVal").textContent = (lhv / 100).toFixed(2).replace(".", ",");
+    $("#lsRange").value = lsv; $("#lsVal").textContent = String(lsv);
+    let col = it.col || INK[it.c];
+    if (!col && isTitle) col = getComputedStyle(root).getPropertyValue("--title").trim();
+    $("#colorIn").value = /^#[0-9a-f]{6}$/i.test(col || "") ? col : INK.salvia;
+  }
   function syncFormat() {
+    if (edit && selCover) {
+      fmtRow.hidden = false;
+      $("#selItemCtl").hidden = true; $("#calCtl").hidden = true; $("#rowCtl").hidden = true; $("#txtCtl").hidden = false;
+      fillFormat(coverStyle(selCover), true);
+      return;
+    }
     const it = selId && findItem(selId);
     fmtRow.hidden = !(edit && it);
     if (!edit || !it) return;
+    $("#selItemCtl").hidden = false;
     $("#txtCtl").hidden = !isText(it);
     $("#calCtl").hidden = ["cal", "hab", "mood"].indexOf(it.s) === -1;
     $("#rowCtl").hidden = !ROWADD[it.s];
     if (ROWADD[it.s]) $("#rowAdd").textContent = ROWADD[it.s];
     if (!isText(it)) return;
-    fontSel.value = it.font || (it.s === "h" ? "dancing" : "caveat");
-    $("#boldBtn").setAttribute("aria-pressed", String(it.b === undefined ? it.s === "h" : it.b));
-    $("#italBtn").setAttribute("aria-pressed", String(!!it.i));
-    document.querySelectorAll("[data-al]").forEach((b) => b.setAttribute("aria-pressed", String((it.al || "left") === b.dataset.al)));
-    $("#colorIn").value = it.col || INK[it.c] || INK.salvia;
+    fillFormat(it, false);
   }
   function pageOf(id) {
     for (let p = 0; p < data.paginas.length; p++) { const k = data.paginas[p].items.findIndex((x) => x.id === id); if (k > -1) return { p, k }; }
@@ -1562,6 +1749,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     old.replaceWith(el);
   }
   function restyle(it) {
+    if (it === data.tituloEstilo || it === data.subtituloEstilo) { styleCover(); syncFormat(); persist(); return; }
     const el = book.querySelector('.it[data-id="' + it.id + '"]');
     if (el) styleText(el, it);
     syncFormat();
@@ -1692,7 +1880,12 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
       return;
     }
     const face = e.target.closest(".face.live");
-    if (!face || !face.classList.contains("paper")) { if (!e.target.closest(".ttl")) select(null); return; }
+    if (!face || !face.classList.contains("paper")) {
+      const tt = e.target.closest(".ttl, .sub");
+      select(null);
+      if (tt) { selCover = tt.classList.contains("sub") ? "subtitulo" : "titulo"; tt.classList.add("sel-title"); syncFormat(); }
+      return;
+    }
     if (tool === "pen" || tool === "eraser") { e.preventDefault(); draw(e, face); return; }
     if (tool) { e.preventDefault(); blurEditing(); place(e, face); return; }
     const el = e.target.closest(".it");
@@ -1817,7 +2010,30 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     const k = curVariant(), pap = document.body.dataset.papel;
     document.querySelectorAll("[data-variant]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.variant === k)));
     document.querySelectorAll("[data-paper]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.paper === pap)));
+    const cs = getComputedStyle(root), hex = (v) => (/^#[0-9a-f]{6}$/i.test(v) ? v : "#888888");
+    if (document.activeElement !== bordadoIn) bordadoIn.value = data.bordado || "";
+    document.querySelectorAll("[data-col]").forEach((inp) => {
+      const k = inp.dataset.col;
+      if (k === "titulo") inp.value = hex((data.tituloEstilo && data.tituloEstilo.col) || cs.getPropertyValue("--title").trim());
+      else if (k === "hilo") inp.value = hex(data.bordadoColor || "#F2E4C8");
+      else inp.value = hex(cs.getPropertyValue(COLVARS[k][0]).trim());
+    });
   }
+  const bordadoIn = $("#bordadoIn");
+  bordadoIn.addEventListener("input", () => { data.bordado = bordadoIn.value; drawBordado(book.querySelector(".bordado")); persist(); });
+  document.querySelectorAll("[data-col]").forEach((inp) => inp.addEventListener("input", () => {
+    const k = inp.dataset.col;
+    if (k === "titulo") { titleStyle().col = inp.value; styleTitle(book.querySelector(".ttl")); }
+    else if (k === "hilo") { data.bordadoColor = inp.value; drawBordado(book.querySelector(".bordado")); }
+    else { data.colores = data.colores || {}; data.colores[k] = inp.value; applyVariant(); }
+    persist();
+  }));
+  $("#colReset").addEventListener("click", () => {
+    delete data.colores; delete data.bordadoColor;
+    if (data.tituloEstilo) delete data.tituloEstilo.col;
+    applyVariant(); styleTitle(book.querySelector(".ttl")); drawBordado(book.querySelector(".bordado")); syncStylePicks(); persist();
+    status("Colores propios quitados: la libreta vuelve a los colores de su estilo.");
+  });
   Object.keys(VARIANTS).forEach((k) => {
     const V = VARIANTS[k], base = VARIANTS.salvia.v, g = (p) => (V.v[p] !== undefined ? V.v[p] : base[p]);
     const b = document.createElement("button");
@@ -1828,7 +2044,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     const t = document.createElement("span"); t.textContent = V.n;
     b.append(m, t);
     b.addEventListener("click", () => {
-      data.estilo = k; data.papel = V.papel;
+      data.estilo = k; data.papel = V.papel; delete data.colores;
       select(null); build(); syncStylePicks(); persist();
       status("Libreta «" + V.n + "» con papel de " + PAPERS[V.papel].toLowerCase() + ".");
     });
@@ -1898,21 +2114,23 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     ink = b.dataset.ink; curColor = INK[ink];
     document.querySelectorAll(".swatch").forEach((s) => s.setAttribute("aria-pressed", String(s === b)));
     $("#colorIn").value = curColor;
-    const it = selId && findItem(selId);
-    if (isText(it)) { it.c = ink; delete it.col; restyle(it); }
+    const it = selText();
+    if (it) { it.c = ink; delete it.col; restyle(it); }
   }));
   $("#colorIn").addEventListener("input", (e) => {
     ink = null; curColor = e.target.value;
     document.querySelectorAll(".swatch").forEach((s) => s.setAttribute("aria-pressed", "false"));
-    const it = selId && findItem(selId);
-    if (isText(it)) { it.col = curColor; restyle(it); }
+    const it = selText();
+    if (it) { it.col = curColor; restyle(it); }
   });
 
   /* Formato del texto seleccionado */
-  const selText = () => { const it = selId && findItem(selId); return isText(it) ? it : null; };
+  function selText() { if (selCover) return coverStyle(selCover); const it = selId && findItem(selId); return isText(it) ? it : null; }
   fontSel.addEventListener("change", () => { const it = selText(); if (it) { it.font = fontSel.value; restyle(it); } });
-  $("#fsDown").addEventListener("click", () => { const it = selText(); if (it) { it.fs = +clamp((it.fs || 1) - 0.1, 0.5, 3).toFixed(2); restyle(it); } });
-  $("#fsUp").addEventListener("click", () => { const it = selText(); if (it) { it.fs = +clamp((it.fs || 1) + 0.1, 0.5, 3).toFixed(2); restyle(it); } });
+  $("#fsRange").addEventListener("input", (e) => { const it = selText(); if (it) { it.fs = +(e.target.value / 100).toFixed(2); restyle(it); } });
+  $("#lhRange").addEventListener("input", (e) => { const it = selText(); if (it) { it.lh = +(e.target.value / 100).toFixed(2); restyle(it); } });
+  $("#lsRange").addEventListener("input", (e) => { const it = selText(); if (it) { it.ls = +e.target.value || undefined; restyle(it); } });
+  $("#undBtn").addEventListener("click", () => { const it = selText(); if (it) { it.u = !it.u; restyle(it); } });
   $("#boldBtn").addEventListener("click", () => { const it = selText(); if (it) { const cur = it.b === undefined ? it.s === "h" : it.b; it.b = !cur; restyle(it); } });
   $("#italBtn").addEventListener("click", () => { const it = selText(); if (it) { it.i = !it.i; restyle(it); } });
   document.querySelectorAll("[data-al]").forEach((b) => b.addEventListener("click", () => { const it = selText(); if (it) { it.al = b.dataset.al === "left" ? undefined : b.dataset.al; restyle(it); } }));
