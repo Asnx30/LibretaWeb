@@ -587,10 +587,13 @@ body.sheet .tools > .tool-row:first-child { flex-wrap: nowrap; overflow-x: auto;
 body.sheet .tools > .tool-row:first-child::-webkit-scrollbar { display: none; }
 body.sheet .desk { justify-content: flex-start; min-height: 0; padding-bottom: calc(var(--toolsH, 120px) + 12px); }
 body.sheet .status { font-size: 12px; }
-body.sheet .decor { display: none; }
-body.sheet .tabs-wrap { order: -1; }
-body.sheet .controls { order: -2; position: sticky; top: max(8px, env(safe-area-inset-top, 0px)); z-index: 40; padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--desk) 96%, transparent); box-shadow: 0 6px 18px -12px rgba(90, 60, 30, 0.5); }
+body.big .decor { display: none; }
+body.big .tabs-wrap { order: -1; }
+body.big .controls { order: -2; position: sticky; top: max(8px, env(safe-area-inset-top, 0px)); z-index: 40; padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--desk) 96%, transparent); box-shadow: 0 6px 18px -12px rgba(90, 60, 30, 0.5); }
 @media (min-width: 900px) { body.sheet .tools { max-width: 1100px; margin: 0 auto; } }
+body.big:not(.sheet) .controls { border-radius: 22px; }
+.zoom-btn[hidden] { display: none; }
+@media (max-width: 759px) { #zoomBtn { display: none; } }
 @media (max-width: 480px) { body.sheet .controls { gap: 4px; padding: 4px 6px; max-width: 100%; } body.sheet .where { min-width: 5.2em; font-size: 14px; } body.sheet .controls .btn { font-size: 14px; } body.sheet .controls .btn:not(.round) { padding: 0 10px; } body.sheet .controls .btn.round { width: 40px; min-width: 40px; height: 40px; } }
 @media (max-width: 360px) { body.sheet #idxBtn { display: none; } }
 body.sheet .controls { gap: 8px; flex-wrap: nowrap; }
@@ -642,6 +645,7 @@ body.sheet .controls .btn:not(.round) { padding: 0 12px; }
     <button class="btn round" id="prev" type="button" aria-label="Página anterior">‹</button>
     <span class="where" id="where" aria-live="polite">Portada</span>
     <button class="btn round" id="next" type="button" aria-label="Página siguiente">›</button>
+    <button class="btn zoom-btn" id="zoomBtn" type="button" aria-pressed="false">Ver en grande</button>
     <button class="btn" id="idxBtn" type="button">Índice</button>
     <button class="btn" id="snd" type="button" aria-pressed="true">Sonido</button>
     <button class="btn" id="shareBtn" type="button" hidden>Copiar enlace</button>
@@ -1186,6 +1190,9 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
 
   /* ---------- Estado ---------- */
   let n = 0, f = 0, side = "right", single = false, pw = 400, edit = false;
+  /* "Ver en grande": una página a lo ancho para leer cómodo. Se recuerda en este navegador, y ?grande en el enlace lo abre así */
+  let zoom = /[?&]grande\b/.test(location.search);
+  try { if (!zoom) zoom = localStorage.getItem("libreta-grande") === "1"; } catch (e) {}
   let leaves = [], tool = null, ink = "salvia", curColor = INK.salvia, selId = null, pending = null, deco = null, sound = true;
 
   /* Texturas y decoración */
@@ -1749,8 +1756,10 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     setTimeout(() => { delete lf.dataset.turning; lf.style.zIndex = zFor(i); }, DUR + 40);
   }
   function blurEditing() { if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur(); }
+  /* En el modo grande la página es más alta que la pantalla: al cambiar de página se vuelve arriba */
+  function topIfBig() { if ((edit || zoom) && window.scrollY > 0) window.scrollTo(0, 0); }
   function next() {
-    blurEditing(); select(null);
+    blurEditing(); select(null); topIfBig();
     if (single) {
       if (side === "left") { if (f >= n) return; side = "right"; applyState(); return; }
       if (f >= n) return;
@@ -1760,7 +1769,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     turn(f); f++; applyState();
   }
   function prev() {
-    blurEditing(); select(null);
+    blurEditing(); select(null); topIfBig();
     if (single) {
       if (side === "right") { if (f === 0) return; side = "left"; applyState(); return; }
       f--; turn(f); side = "right"; applyState(); return;
@@ -1774,8 +1783,9 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     const vw = root.clientWidth, vh = window.innerHeight;
     const wasSingle = single;
     /* Al editar: una sola página grande, a lo ancho, como una hoja de Google Docs (se baja con scroll) */
-    single = vw < 760 || edit;
-    const sheet = edit;
+    single = vw < 760 || edit || zoom;
+    const sheet = edit, big = edit || zoom;
+    document.body.classList.toggle("big", big);
     document.body.classList.toggle("sheet", sheet);
     /* Espacio que ocupan los botones; en el móvil solo cuenta la fila principal de la barra, los paneles se superponen */
     let chrome = single ? 236 : 150;
@@ -1785,14 +1795,26 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     }
     if (!tabsWrap.hidden) chrome += tabsWrap.offsetHeight + 8;
     root.style.setProperty("--toolsH", (sheet ? tools.offsetHeight : 0) + "px");
-    let w = edit ? Math.min(vw - 36, 820) : Math.min(single ? vw - 24 : (vw - 64) / 2, (vh - chrome) / 1.414, 520);
+    let w = (edit || zoom) ? Math.min(vw - 36, 820) : Math.min(single ? vw - 24 : (vw - 64) / 2, (vh - chrome) / 1.414, 640);
     pw = Math.max(170, Math.floor(w));
     root.style.setProperty("--pw", pw + "px");
     root.style.setProperty("--ph", Math.round(pw * 1.414) + "px");
     stage.classList.toggle("single", single);
     if (single && !wasSingle) side = f === n ? "left" : "right";
+    syncZoomBtn();
     applyState(true);
   }
+  function syncZoomBtn() {
+    const b = $("#zoomBtn");
+    b.hidden = edit;
+    b.textContent = zoom ? "Ver libro" : "Ver en grande";
+    b.setAttribute("aria-pressed", String(zoom));
+  }
+  $("#zoomBtn").addEventListener("click", () => {
+    zoom = !zoom;
+    try { localStorage.setItem("libreta-grande", zoom ? "1" : "0"); } catch (e) {}
+    layout(); window.scrollTo(0, 0);
+  });
   /* Al abrir el teclado del móvil la pantalla cambia de alto: mientras se escribe no se recoloca nada */
   let resizeT = null;
   const typing = () => { const a = document.activeElement; return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
@@ -2906,7 +2928,9 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   const shareBtn = $("#shareBtn");
   shareBtn.hidden = inFrame;
   shareBtn.addEventListener("click", () => {
-    const url = location.href;
+    let url = location.href;
+    /* Si se está viendo en grande, el enlace copiado también abre en grande */
+    if (zoom && !/[?&]grande\b/.test(location.search)) url = location.origin + location.pathname + (location.search ? location.search + "&grande" : "?grande") + location.hash;
     const done = () => { shareBtn.textContent = "Enlace copiado"; setTimeout(() => { shareBtn.textContent = "Copiar enlace"; }, 2000); };
     try {
       navigator.clipboard.writeText(url).then(done, () => { window.prompt("Copia este enlace:", url); });
