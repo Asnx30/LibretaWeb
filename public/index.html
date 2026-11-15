@@ -355,9 +355,9 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
 body.editing .tab > button { padding-right: 22px; }
 .tab > button:hover { transform: translateY(-2px); }
 .tab-x { position: absolute; top: -10px; right: -10px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: #fff; color: #7A5C4A; font: 700 14px/1 var(--ui-font); cursor: pointer; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); padding: 0; }
-.tab-add { display: none; align-items: center; gap: 6px; }
+.tab-add { display: none; align-items: center; gap: 6px; max-width: 100%; flex-wrap: wrap; justify-content: center; }
 body.editing .tab-add { display: inline-flex; }
-.tab-add input { font: 500 14px/1 var(--ui-font); border: 1px solid rgba(74, 86, 68, 0.25); border-radius: 999px; padding: 0 12px; min-height: 36px; width: 11em; background: #fff; color: var(--ui-ink); }
+.tab-add input { font: 500 14px/1 var(--ui-font); border: 1px solid rgba(74, 86, 68, 0.25); border-radius: 999px; padding: 0 12px; min-height: 36px; width: 11em; max-width: 100%; min-width: 0; background: #fff; color: var(--ui-ink); }
 .tab-add button { font: 600 13px/1 var(--ui-font); border: 0; border-radius: 999px; background: var(--chip); color: var(--ui-ink); min-height: 36px; padding: 0 12px; cursor: pointer; box-shadow: 0 2px 0 rgba(120, 95, 70, 0.2); }
 .idx { position: fixed; inset: 0; z-index: 60; background: rgba(60, 50, 40, 0.45); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 14px 14px; }
 .idx[hidden] { display: none; }
@@ -585,6 +585,12 @@ body.sheet .tools > .tool-row:first-child { flex-wrap: nowrap; overflow-x: auto;
 body.sheet .tools > .tool-row:first-child::-webkit-scrollbar { display: none; }
 body.sheet .desk { justify-content: flex-start; min-height: 0; padding-bottom: calc(var(--toolsH, 120px) + 12px); }
 body.sheet .status { font-size: 12px; }
+body.sheet .decor { display: none; }
+body.sheet .tabs-wrap { order: -1; }
+body.sheet .controls { order: -2; position: sticky; top: max(8px, env(safe-area-inset-top, 0px)); z-index: 40; padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--desk) 96%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 6px 18px -12px rgba(90, 60, 30, 0.5); }
+@media (min-width: 900px) { body.sheet .tools { max-width: 1100px; margin: 0 auto; } }
+@media (max-width: 480px) { body.sheet .controls { gap: 4px; padding: 4px 6px; max-width: 100%; } body.sheet .where { min-width: 5.2em; font-size: 14px; } body.sheet .controls .btn { font-size: 14px; } body.sheet .controls .btn:not(.round) { padding: 0 10px; } body.sheet .controls .btn.round { width: 40px; min-width: 40px; height: 40px; } }
+@media (max-width: 360px) { body.sheet #idxBtn { display: none; } }
 body.sheet .controls { gap: 8px; flex-wrap: nowrap; }
 body.sheet #snd, body.sheet #shareBtn { display: none; }
 body.sheet .where { min-width: 7.5em; }
@@ -1766,8 +1772,9 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   function layout() {
     const vw = root.clientWidth, vh = window.innerHeight;
     const wasSingle = single;
-    single = vw < 760;
-    const sheet = edit && single;
+    /* Al editar: una sola página grande, a lo ancho, como una hoja de Google Docs (se baja con scroll) */
+    single = vw < 760 || edit;
+    const sheet = edit;
     document.body.classList.toggle("sheet", sheet);
     /* Espacio que ocupan los botones; en el móvil solo cuenta la fila principal de la barra, los paneles se superponen */
     let chrome = single ? 236 : 150;
@@ -1777,7 +1784,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     }
     if (!tabsWrap.hidden) chrome += tabsWrap.offsetHeight + 8;
     root.style.setProperty("--toolsH", (sheet ? tools.offsetHeight : 0) + "px");
-    let w = Math.min(single ? vw - 24 : (vw - 64) / 2, (vh - chrome) / 1.414, 520);
+    let w = edit ? Math.min(vw - 36, 820) : Math.min(single ? vw - 24 : (vw - 64) / 2, (vh - chrome) / 1.414, 520);
     pw = Math.max(170, Math.floor(w));
     root.style.setProperty("--pw", pw + "px");
     root.style.setProperty("--ph", Math.round(pw * 1.414) + "px");
@@ -2755,6 +2762,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     setTool(null); selId = null; pending = null; deco = null;
     flush();
     build(); layout();
+    try { window.scrollTo(0, 0); } catch (e) {}
     if (on) histReset();
     $("#cloudPanel").hidden = true; $("#cloudBtn").setAttribute("aria-pressed", "false");
     syncCloudUi();
