@@ -349,6 +349,9 @@ body[data-spiral="1"] .face.paper.verso { --gutter: radial-gradient(circle at ca
 .btn.round { width: 46px; padding: 0; font-size: 24px; }
 .btn[aria-pressed="true"] { background: var(--ui-ink); color: var(--chip); }
 .book.closed .ribbon { display: none; }
+.loading-msg { display: none; position: fixed; inset: 0; z-index: 5; margin: 0; place-items: center; padding: 24px; text-align: center; font: 500 1.6rem/1.3 var(--hand); color: var(--ui-ink); pointer-events: none; }
+body.cargando .loading-msg { display: grid; }
+body.cargando .scene, body.cargando .hint, body.cargando .tabs-wrap { visibility: hidden; }
 .tabs-wrap { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: flex-end; position: relative; z-index: 2; padding: 0 12px; }
 .tabs-wrap[hidden] { display: none; }
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
@@ -652,6 +655,7 @@ body.sheet .controls .btn:not(.round) { padding: 0 12px; }
     <button class="btn" id="editBtn" type="button" aria-pressed="false" hidden>Editar</button>
   </div>
   <p class="hint" id="hint">Toca la libreta para abrirla</p>
+  <p class="loading-msg" aria-live="polite">Abriendo la libreta…</p>
 
   <form class="login" id="loginCard" hidden>
     <p class="login-t">Entrar para escribir</p>
@@ -1016,6 +1020,15 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   function storeSession() { try { if (session) localStorage.setItem(SKEY, JSON.stringify(session)); else localStorage.removeItem(SKEY); } catch (e) {} }
   function setPending(on) { try { if (on) localStorage.setItem(PKEY, "1"); else localStorage.removeItem(PKEY); } catch (e) {} }
   function isPending() { try { return localStorage.getItem(PKEY) === "1"; } catch (e) { return false; } }
+  /* Copia de lo publicado en este navegador: al volver a entrar la libreta aparece al instante */
+  const CKEY = "libreta-nube-cache";
+  function readCache() { try { const c = JSON.parse(localStorage.getItem(CKEY) || "null"); return c && c.data && Array.isArray(c.data.paginas) ? c : null; } catch (e) { return null; } }
+  function writeCache(json, updated_at) {
+    try {
+      if (!updated_at || json.length > 4e6) { localStorage.removeItem(CKEY); return; }
+      localStorage.setItem(CKEY, '{"updated_at":' + JSON.stringify(updated_at) + ',"data":' + json + "}");
+    } catch (e) { try { localStorage.removeItem(CKEY); } catch (e2) {} }
+  }
   function takeSession(j, email) {
     session = {
       access_token: j.access_token, refresh_token: j.refresh_token,
@@ -1030,6 +1043,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
       if (!r.ok) throw new Error("login");
       session = { clave: password, email: "", expires_at: 9e12 };
       storeSession();
+      setTimeout(externalize, 1500);
       return;
     }
     const r = await fetch(nube.url + "/auth/v1/token?grant_type=password", {
@@ -1057,7 +1071,9 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   }
   async function cloudFetchRow(cfg) {
     if (cfg.api) {
-      const rn = await fetch(cfg.api + "/libreta", { cache: "no-store" });
+      const h = lastUpdated ? { "If-None-Match": '"' + lastUpdated + '"' } : {};
+      const rn = await fetch(cfg.api + "/libreta", { cache: "no-store", headers: h });
+      if (rn.status === 304) return { notModified: true };
       if (rn.status === 404) return null;
       if (!rn.ok) { const e = new Error("read"); e.status = rn.status; throw e; }
       return await rn.json();
@@ -1071,8 +1087,9 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     if (saveTimer || saving) return true;
     try {
       const row = await cloudFetchRow(nube);
-      if (row && row.updated_at !== lastUpdated) {
+      if (row && !row.notModified && row.updated_at !== lastUpdated) {
         lastUpdated = row.updated_at;
+        writeCache(JSON.stringify(row.data), row.updated_at);
         if (!edit) { data = normalize(row.data); build(); }
       }
       return true;
@@ -1093,6 +1110,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
         if (!rn.ok) throw new Error("save " + rn.status);
         const jr = await rn.json().catch(() => ({}));
         lastUpdated = jr.updated_at || stamp;
+        writeCache(json, jr.updated_at);
         setPending(false);
         status("Guardado. Quien abra la libreta ya lo ve.");
         return;
@@ -1113,6 +1131,37 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
       saving = false;
       if (again) { const j = again; again = null; cloudSave(j); }
     }
+  }
+  const DATA_EXT = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov", "video/ogg": "ogg" };
+  const extFailed = new Set();
+  let extBusy = false;
+  async function uploadData(durl) {
+    const m = /^data:([^;,]+)/.exec(durl), ext = m && DATA_EXT[m[1]];
+    if (!ext) throw new Error("tipo");
+    const blob = await (await fetch(durl)).blob();
+    if (blob.size > 4.5e6) throw new Error("grande");
+    return uploadMedia(blob, ext);
+  }
+  /* Así la libreta pesa poco: se abre, se guarda y se deshace mucho más rápido */
+  async function externalize() {
+    if (extBusy || !isNet() || !canCloudWrite()) return;
+    extBusy = true;
+    let changed = false;
+    const one = async (obj, key) => {
+      const v = obj[key];
+      if (typeof v !== "string" || v.slice(0, 5) !== "data:") return;
+      const tag = v.length + ":" + v.slice(-64);
+      if (extFailed.has(tag)) return;
+      try { const u = await uploadData(v); if (obj[key] === v) { obj[key] = u; changed = true; } }
+      catch (e) { extFailed.add(tag); }
+    };
+    try {
+      for (const pg of data.paginas) {
+        await one(pg, "d");
+        for (const it of pg.items) await one(it, "src");
+      }
+    } finally { extBusy = false; }
+    if (changed) persist();
   }
   async function uploadMedia(blob, ext) {
     if (!(await ensureSession())) throw new Error("session");
@@ -1876,7 +1925,12 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     down = null;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { dx < 0 ? next() : prev(); return; }
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-      if (single) { const r = stage.getBoundingClientRect(); e.clientX > r.left + r.width / 2 ? next() : prev(); }
+      if (single) {
+        const r = stage.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
+        /* En grande la página ocupa toda la pantalla: solo pasan página los toques cerca de los bordes */
+        if (zoom && x > 0.28 && x < 0.72) return;
+        x > 0.5 ? next() : prev();
+      }
       else { const r = book.getBoundingClientRect(); e.clientX >= r.left + r.width / 2 ? next() : prev(); }
     }
   });
@@ -1958,6 +2012,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     histPush(json);
     saveDraft(json, cloudOn());
     if (canCloudWrite()) cloudSave(json);
+    if (isNet() && canCloudWrite() && json.indexOf('":"data:') !== -1) externalize();
   }
   function persist() { clearTimeout(saveTimer); saveTimer = setTimeout(commit, 500); }
   function flush() { if (saveTimer) { clearTimeout(saveTimer); commit(); } }
@@ -2938,6 +2993,11 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   });
 
   const startPage = location.hash.match(/^#pagina-(\d+)$/);
+  if (cloudOn()) {
+    const c = readCache();
+    if (c) { data = normalize(c.data); lastUpdated = c.updated_at; }
+    else document.body.classList.add("cargando");
+  }
   build();
   layout();
   syncCloudUi();
@@ -2946,7 +3006,14 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
   histReset();
   if (cloudOn()) {
     /* Lo publicado en la nube manda; si quien escribe dejó cambios sin subir, se recuperan y se suben */
-    cloudLoad().then(() => {
+    cloudLoad().then((ok) => {
+      if (!ok && document.body.classList.contains("cargando")) {
+        document.querySelector(".loading-msg").textContent = "No se ha podido abrir la libreta. Revisa la conexión y vuelve a cargar la página.";
+        return;
+      }
+      document.body.classList.remove("cargando");
+      if (startPage && !edit) goToPage(+startPage[1]);
+      if (session && isNet()) setTimeout(externalize, 1500);
       if (!session || !isPending()) { histReset(); return; }
       return loadDraft().then((d) => {
         if (!d) return;

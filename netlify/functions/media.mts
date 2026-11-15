@@ -15,7 +15,12 @@ export default async (req: Request, context: Context) => {
     if (!found) return new Response("No encontrado", { status: 404 });
     const type = String((found.metadata as { type?: string })?.type || "application/octet-stream");
     return new Response(found.data as ArrayBuffer, {
-      headers: { "content-type": type, "cache-control": "public, max-age=31536000, immutable" },
+      headers: {
+        "content-type": type,
+        "cache-control": "public, max-age=31536000, immutable",
+        /* Cada archivo tiene nombre único y no cambia nunca: la CDN de Netlify lo guarda y ya no hace falta llamar a la función */
+        "netlify-cdn-cache-control": "public, max-age=31536000, immutable, durable",
+      },
     });
   }
 
