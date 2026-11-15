@@ -119,6 +119,8 @@ button { font-family: inherit; }
 .leaf.peek-next { transform: rotateY(-16deg); transition-duration: 350ms; }
 .leaf.flipped.peek-prev { transform: rotateY(-164deg); transition-duration: 350ms; }
 .no-anim, .no-anim .leaf { transition: none !important; }
+/* Las hojas lejanas no se pintan: así la libreta va fluida aunque tenga muchas páginas */
+.leaf.far { display: none; }
 
 .face {
   position: absolute; inset: 0; overflow: hidden;
@@ -587,7 +589,7 @@ body.sheet .desk { justify-content: flex-start; min-height: 0; padding-bottom: c
 body.sheet .status { font-size: 12px; }
 body.sheet .decor { display: none; }
 body.sheet .tabs-wrap { order: -1; }
-body.sheet .controls { order: -2; position: sticky; top: max(8px, env(safe-area-inset-top, 0px)); z-index: 40; padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--desk) 96%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 6px 18px -12px rgba(90, 60, 30, 0.5); }
+body.sheet .controls { order: -2; position: sticky; top: max(8px, env(safe-area-inset-top, 0px)); z-index: 40; padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--desk) 96%, transparent); box-shadow: 0 6px 18px -12px rgba(90, 60, 30, 0.5); }
 @media (min-width: 900px) { body.sheet .tools { max-width: 1100px; margin: 0 auto; } }
 @media (max-width: 480px) { body.sheet .controls { gap: 4px; padding: 4px 6px; max-width: 100%; } body.sheet .where { min-width: 5.2em; font-size: 14px; } body.sheet .controls .btn { font-size: 14px; } body.sheet .controls .btn:not(.round) { padding: 0 10px; } body.sheet .controls .btn.round { width: 40px; min-width: 40px; height: 40px; } }
 @media (max-width: 360px) { body.sheet #idxBtn { display: none; } }
@@ -1587,7 +1589,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     } else if (it.src) {
       el = div("it img");
       if (it.f) el.classList.add("framed");
-      const im = new Image(); im.src = it.src; im.alt = ""; im.draggable = false;
+      const im = new Image(); im.decoding = "async"; im.loading = "lazy"; im.src = it.src; im.alt = ""; im.draggable = false;
       el.append(im);
     } else if (it.s === "k") {
       el = div("it stk"); el.innerHTML = art(it.v);
@@ -1619,15 +1621,13 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     face.dataset.p = p;
     const items = div("items");
     data.paginas[p].items.forEach((it) => items.append(itemEl(it)));
-    const cv = document.createElement("canvas");
-    cv.className = "ink"; cv.width = 900; cv.height = 1272;
+    face.append(items);
     if (data.paginas[p].d) {
-      const img = new Image();
-      img.onload = () => cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-      img.src = data.paginas[p].d;
+      const im = new Image(); im.className = "ink"; im.alt = ""; im.draggable = false; im.decoding = "async";
+      im.src = data.paginas[p].d; face.append(im);
     }
     const fo = document.createElement("span"); fo.className = "folio"; fo.textContent = p + 1;
-    face.append(items, cv, fo);
+    face.append(fo);
   }
   function coverFront(face) {
     face.classList.add("cover");
@@ -1688,6 +1688,7 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     if (f === n) side = "left";
     leaves.forEach((lf, i) => {
       lf.classList.toggle("flipped", i < f);
+      lf.classList.toggle("far", i > 0 && i < n - 1 && (i < f - 3 || i > f + 2));
       lf.classList.remove("peek-next", "peek-prev");
       if (!lf.dataset.turning) lf.style.zIndex = zFor(i);
       lf.querySelectorAll(".face").forEach((fc) => fc.classList.remove("live"));
@@ -2124,8 +2125,20 @@ const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
     window.addEventListener("pointermove", mv);
     window.addEventListener("pointerup", up);
   }
+  function inkCanvas(face) {
+    let cv = face.querySelector("canvas.ink");
+    if (cv) return cv;
+    const old = face.querySelector("img.ink");
+    if (old && !(old.complete && old.naturalWidth)) return null;
+    cv = document.createElement("canvas"); cv.className = "ink"; cv.width = 900; cv.height = 1272;
+    if (old) { cv.getContext("2d").drawImage(old, 0, 0, cv.width, cv.height); old.replaceWith(cv); }
+    else face.querySelector(".items").after(cv);
+    return cv;
+  }
   function draw(e, face) {
-    const cv = face.querySelector(".ink"), ctx = cv.getContext("2d");
+    const cv = inkCanvas(face);
+    if (!cv) return;
+    const ctx = cv.getContext("2d");
     const r = cv.getBoundingClientRect(), kx = cv.width / r.width, ky = cv.height / r.height;
     const p = +face.dataset.p;
     ctx.lineCap = "round"; ctx.lineJoin = "round";
